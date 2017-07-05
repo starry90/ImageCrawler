@@ -8,6 +8,7 @@ import time
 import os
 import platform
 import sys
+import traceback
 
 
 class ArtDetail:
@@ -24,12 +25,12 @@ class ArtDetail:
         self.pageIndex = 1
         self.authorName = ''
         self.root_dir = 'D:\ArtStation\\'
-        self.wait_time = 2
+        self.wait_time = 1
         self.system_str = ''
         self.dir_path = ''
         self.current_dir = ''
         self.url_author = ''
-        self.userAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.81 Safari/537.36'
+        self.userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0'
         self.headers = {'User-Agent': self.userAgent}
         self.get_dir()
 
@@ -40,7 +41,6 @@ class ArtDetail:
         if system_str == 'Linux':
             self.root_dir = os.environ['HOME'] + '/ArtStation/'
             self.dir_path = self.root_dir + 'image/'
-            self.userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0'
         elif system_str == 'Windows':
             self.root_dir = 'D:\ArtStation\\'
             self.dir_path = self.root_dir + 'image\\'
@@ -72,7 +72,7 @@ class ArtDetail:
             print '无效网址'
             return
         items = url_author.split("/")
-        self.authorName = items[len(items) - 1]
+        self.authorName = items[- 1]
         print "艺术家：", self.authorName
         self.url_author = url_author.replace('/artist/', '/users/')
         self.get_author(self.url_author)
@@ -97,7 +97,6 @@ class ArtDetail:
         """
         html_info = ''
         for i in range(10):
-            # tyr except else
             try:
                 # print url_target
                 target_request = urllib2.Request(url_target, headers=self.headers)
@@ -105,11 +104,10 @@ class ArtDetail:
                 html_info = target_response.read()
                 time.sleep(self.wait_time)
                 # print html_info
-            except Exception as ex:
-                print 'error：' + str(ex)
+            except Exception:
                 print '又要马儿跑，又要马儿不吃草，马儿累死了，重试中...'
                 if i >= 9:
-                    self.write_file(self.root_dir + 'error.log', 'a+', str(ex))
+                    self.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
                     time.sleep(self.wait_time)
             else:
@@ -174,7 +172,7 @@ class ArtDetail:
 
         # 截取图片名称
         image_item = image_url.split("/")
-        image_name = image_item[len(image_item) - 1]
+        image_name = image_item[- 1]
         image_name_item = image_name.split("?")
         image_name = image_name_item[0]
         print '图片名称：' + image_name
@@ -198,10 +196,10 @@ class ArtDetail:
         for i in range(10):
             try:
                 urllib.urlretrieve(image_url, file_local, reporthook=self.schedule)
-            except Exception as ex:
+            except Exception:
                 print '又要马儿跑，又要马儿不吃草，马儿累死了，重试中...'
                 if i >= 9:
-                    self.write_file(self.root_dir + 'error.log', 'a+', str(ex))
+                    self.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
                     time.sleep(self.wait_time)
             else:
@@ -220,20 +218,31 @@ class ArtDetail:
         if per > 100:
             per = 100
 
+        # 输出%，不是\%,而是%%
         print '%0.f%%' % per,
         if per == 100:
             print '\n'
-            # 输出%，不是\%,而是%%
 
     @staticmethod
-    def write_file(file_name='', model='', ex=''):
-        with file(file_name, model) as file_temp:
-            file_temp.writelines(ex + "\n\n")
+    def write_file(file_name='', model='', content=''):
+        with open(file_name, model) as file_temp:
+            file_temp.writelines(content + "\n\n")
 
 
-art = ArtDetail()
-try:
-    art.read_art()
-except Exception as e:
-    print '下载出错啦：' + str(e)
-    raw_input('press [Enter]')
+def main():
+    art = ArtDetail()
+    try:
+        art.read_art()
+    except Exception:
+        print '下载出错'
+        ex_info = traceback.format_exc()
+        print ex_info
+        art.write_file(art.root_dir + 'error.log', 'a+', str(ex_info))
+
+    finally:
+        time.sleep(3)
+        raw_input('press [Enter]')
+
+
+if __name__ == '__main__':
+    main()
