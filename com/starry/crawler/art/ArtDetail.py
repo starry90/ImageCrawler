@@ -13,8 +13,6 @@ import traceback
 
 class ArtDetail:
     """
-    https://www.artstation.com
-
     author: starry lau
     """
 
@@ -51,29 +49,27 @@ class ArtDetail:
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
+        print "当前系统：" + self.system_str
+        print "当前目录：" + self.current_dir
+        print "下载目录：" + self.root_dir
+
     def read_art(self):
-        print "大触派我来寻山哦..."
-        print "\n当前系统：" + self.system_str
-        print "\n当前文件所在目录：" + self.current_dir
         with open(os.path.join(self.current_dir, 'art.txt'), 'r') as art_file:
             for line in art_file:
                 print line
                 self.set_author(line.strip())
 
-        raw_input('陛下，小的任务已完成，请按回车结束')
-
     def set_author(self, url_author=''):
         """
         设置作者url
 
-        https://www.artstation.com/artist/mads_ahm
         """
         if url_author == '' or r'www.artstation.com/artist' not in url_author:
             print '无效网址'
             return
         items = url_author.split("/")
         self.authorName = items[- 1]
-        print "艺术家：", self.authorName
+        print "艺术家: %s" % self.authorName
         self.url_author = url_author.replace('/artist/', '/users/')
         self.get_author(self.url_author)
 
@@ -81,12 +77,11 @@ class ArtDetail:
         """
         获取作者作品
 
-        :param url_author: https://www.artstation.com/users/mads_ahm
+        :param url_author: author url
         """
-        # https://www.artstation.com/users/mads_ahm/projects.json?page=1
         target_url = url_author + '/projects.json?page=' + str(self.pageIndex)
         json_info = self.get_html(target_url)
-        if not json_info == '':
+        if json_info:
             self.parse_json(json_info)
 
     def get_html(self, url_target=''):
@@ -104,18 +99,16 @@ class ArtDetail:
                 html_info = target_response.read()
                 time.sleep(self.wait_time)
                 # print html_info
-            except Exception:
-                print '又要马儿跑，又要马儿不吃草，马儿累死了，重试中...'
+                break
+            except urllib2.URLError as why:
+                print '重试中......%d' % i
                 if i >= 9:
                     self.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
                     time.sleep(self.wait_time)
-            else:
-                break
 
         return html_info
 
-    #
     def parse_json(self, json_info):
         """
         解析json
@@ -127,17 +120,15 @@ class ArtDetail:
         # print target_model.keys()
 
         size = target_model["total_count"] / 50 + 1
-        for i in range(size):
-            print '当前页码：%d/%d' % (self.pageIndex, size)
-            self.pageIndex += 1
+        for i in range(1, size + 1):
+            print '当前页码：%d/%d' % (i, size)
             for item in target_model["data"]:
                 print item["permalink"]
                 html_info = self.get_html(item["permalink"])
                 if not html_info == '':
                     self.parse_html(html_info)
 
-            if self.pageIndex <= size:
-                self.get_author(self.url_author)
+            self.get_author(self.url_author)
 
     def parse_html(self, html_info):
         """
@@ -159,11 +150,6 @@ class ArtDetail:
 
         :param image_url: 图片下载地址
         """
-        # https://cdnb.artstation.com/p/assets/images/images/006/477/499/small/bryan-diego-img-3278.jpg?1498893949
-        # https://cdnb.artstation.com/p/assets/images/images/006/477/499/medium/bryan-diego-img-3278.jpg?1498893949
-        # https://cdnb.artstation.com/p/assets/images/images/006/477/499/small_square/bryan-diego-img-3278.jpg?1498893949
-        # https://cdnb.artstation.com/p/assets/images/images/006/477/499/smaller_square/bryan-diego-img-3278.jpg?1498893949
-        # https://cdnb.artstation.com/p/assets/images/images/006/477/499/micro_square/bryan-diego-img-3278.jpg?1498893949
         image_url = image_url.replace('small', 'large')
         image_url = image_url.replace('medium', 'large')
         image_url = image_url.replace('small_square', 'large')
@@ -196,29 +182,27 @@ class ArtDetail:
         for i in range(10):
             try:
                 urllib.urlretrieve(image_url, file_local, reporthook=self.schedule)
-            except Exception:
-                print '又要马儿跑，又要马儿不吃草，马儿累死了，重试中...'
+                break
+            except Exception as why:
+                print '重试中......%d' % i
                 if i >= 9:
                     self.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
                     time.sleep(self.wait_time)
-            else:
-                break
 
     @staticmethod
-    def schedule(blocknum, bs, size):
+    def schedule(block_num, bs, size):
         """
         下载进度
 
-        :param blocknum: 已经下载的数据块
+        :param block_num: 已经下载的数据块
         :param bs: 数据块的大小
         :param size: 远程文件的大小
         """
-        per = 100.0 * blocknum * bs / size
+        per = 100.0 * block_num * bs / size
         if per > 100:
             per = 100
 
-        # 输出%，不是\%,而是%%
         print '%0.f%%' % per,
         if per == 100:
             print '\n'
@@ -233,7 +217,7 @@ def main():
     art = ArtDetail()
     try:
         art.read_art()
-    except Exception:
+    except:
         print '下载出错'
         ex_info = traceback.format_exc()
         print ex_info
