@@ -24,32 +24,28 @@ class ArtDetail:
         self.authorName = ''
         self.root_dir = 'D:\ArtStation\\'
         self.wait_time = 1
-        self.system_str = ''
         self.dir_path = ''
-        self.current_dir = ''
+        self.current_dir = sys.path[0]
         self.url_author = ''
         self.userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0'
         self.headers = {'User-Agent': self.userAgent}
         self.get_dir()
 
     def get_dir(self):
-        self.current_dir = sys.path[0]
         system_str = platform.system()
-        self.system_str = system_str
         if system_str == 'Linux':
             self.root_dir = os.environ['HOME'] + '/ArtStation/'
-            self.dir_path = self.root_dir + 'image/'
         elif system_str == 'Windows':
             self.root_dir = 'D:\ArtStation\\'
-            self.dir_path = self.root_dir + 'image\\'
         else:
             self.root_dir = os.path.expanduser(r'~/Desktop/') + 'ArtStation/'
-            self.dir_path = self.root_dir + 'image/'
+
+        self.dir_path = self.root_dir + '%s' + os.sep
 
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
-        print "当前系统：" + self.system_str
+        print "当前系统：" + system_str
         print "当前目录：" + self.current_dir
         print "下载目录：" + self.root_dir
 
@@ -64,22 +60,21 @@ class ArtDetail:
         设置作者url
 
         """
-        if url_author == '' or r'www.artstation.com/artist' not in url_author:
+        if not url_author or r'artstation' not in url_author:
             print '无效网址'
             return
         items = url_author.split("/")
         self.authorName = items[- 1]
         print "艺术家: %s" % self.authorName
-        self.url_author = url_author.replace('/artist/', '/users/')
-        self.get_author(self.url_author)
+        self.url_author = url_author.replace(r'/artist/', r'/users/')
+        self.get_author()
 
-    def get_author(self, url_author=''):
+    def get_author(self):
         """
         获取作者作品
 
-        :param url_author: author url
         """
-        target_url = url_author + '/projects.json?page=' + str(self.pageIndex)
+        target_url = self.url_author + '/projects.json?page=' + str(self.pageIndex)
         json_info = self.get_html(target_url)
         if json_info:
             self.parse_json(json_info)
@@ -95,12 +90,12 @@ class ArtDetail:
             try:
                 # print url_target
                 target_request = urllib2.Request(url_target, headers=self.headers)
-                target_response = urllib2.urlopen(target_request)
+                target_response = urllib2.urlopen(target_request, timeout=10)
                 html_info = target_response.read()
                 time.sleep(self.wait_time)
                 # print html_info
                 break
-            except urllib2.URLError as why:
+            except Exception as why:
                 print '重试中......%d' % i
                 if i >= 9:
                     self.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
@@ -120,15 +115,17 @@ class ArtDetail:
         # print target_model.keys()
 
         size = target_model["total_count"] / 50 + 1
-        for i in range(1, size + 1):
-            print '当前页码：%d/%d' % (i, size)
-            for item in target_model["data"]:
-                print item["permalink"]
-                html_info = self.get_html(item["permalink"])
-                if not html_info == '':
-                    self.parse_html(html_info)
+        print '当前页码：%d/%d' % (self.pageIndex, size)
+        data_list = target_model["data"]
+        for index, value in enumerate(data_list):
+            print "第%d个作品：%s" % (index + 1 + (self.pageIndex - 1) * 50, str(value["permalink"]))
+            html_info = self.get_html(value["permalink"])
+            if html_info:
+                self.parse_html(html_info)
 
-            self.get_author(self.url_author)
+        self.pageIndex += 1
+        if self.pageIndex != size:
+            self.get_author()
 
     def parse_html(self, html_info):
         """
@@ -164,7 +161,7 @@ class ArtDetail:
         print '图片名称：' + image_name
 
         # 创建本地文件夹
-        dir_path = self.dir_path.replace('image', self.authorName)
+        dir_path = self.dir_path % self.authorName
         if not os.path.isdir(dir_path):
             os.makedirs(dir_path)
 
