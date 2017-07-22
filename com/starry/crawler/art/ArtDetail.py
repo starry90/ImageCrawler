@@ -10,6 +10,8 @@ import platform
 import sys
 import traceback
 
+from com.starry.crawler.util import FileUtil
+
 
 class ArtDetail:
     """
@@ -98,7 +100,7 @@ class ArtDetail:
             except Exception as why:
                 print '重试中......%d' % i
                 if i >= 9:
-                    self.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
+                    FileUtil.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
                     time.sleep(self.wait_time)
 
@@ -169,7 +171,7 @@ class ArtDetail:
         file_local = dir_path + image_name
         if not os.path.exists(file_local):
             print '下载中:',
-            self.write_file(dir_path + 'image.txt', 'a+', image_url)
+            FileUtil.write_file(dir_path + 'image.txt', 'a+', image_url)
             self.download_image(image_url, file_local)
             time.sleep(self.wait_time)
         else:
@@ -178,36 +180,14 @@ class ArtDetail:
     def download_image(self, image_url='', file_local=''):
         for i in range(10):
             try:
-                urllib.urlretrieve(image_url, file_local, reporthook=self.schedule)
+                urllib.urlretrieve(image_url, file_local, reporthook=FileUtil.schedule)
                 break
             except Exception as why:
                 print '重试中......%d' % i
                 if i >= 9:
-                    self.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
+                    FileUtil.write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
                     time.sleep(self.wait_time)
-
-    @staticmethod
-    def schedule(block_num, bs, size):
-        """
-        下载进度
-
-        :param block_num: 已经下载的数据块
-        :param bs: 数据块的大小
-        :param size: 远程文件的大小
-        """
-        per = 100.0 * block_num * bs / size
-        if per > 100:
-            per = 100
-
-        print '%0.f%%' % per,
-        if per == 100:
-            print '\n'
-
-    @staticmethod
-    def write_file(file_name='', model='', content=''):
-        with open(file_name, model) as file_temp:
-            file_temp.writelines(content + "\n\n")
 
 
 def main():
@@ -218,10 +198,9 @@ def main():
         print '下载出错'
         ex_info = traceback.format_exc()
         print ex_info
-        art.write_file(art.root_dir + 'error.log', 'a+', str(ex_info))
+        FileUtil.write_file(art.root_dir + 'error.log', 'a+', str(ex_info))
 
     finally:
-        time.sleep(3)
         raw_input('press [Enter]')
 
 
