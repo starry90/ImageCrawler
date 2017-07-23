@@ -4,11 +4,11 @@
 
 def write_file(file_name='', model='', content=''):
     """
-    写把内容写入到指定文件方法
+    Writes content to the specified file
 
-    :param file_name:  文件名称
-    :param model:  文件读写模式
-    :param content:  写入文件内容
+    :param file_name:  file name
+    :param model:  file write mode
+    :param content:  the content of the write file
     """
     if not file_name or not content:
         return
@@ -19,11 +19,11 @@ def write_file(file_name='', model='', content=''):
 
 def schedule(block_num, bs, size):
     """
-    下载进度
+    Download progress
 
-    :param block_num: 已经下载的数据块
-    :param bs: 数据块的大小
-    :param size: 远程文件的大小
+    :param block_num: downloaded data block
+    :param bs: size of data block
+    :param size: file size
     """
     per = 100.0 * block_num * bs / size
     if per > 100:

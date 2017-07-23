@@ -13,11 +13,11 @@ import urllib2
 
 def write_file(file_name='', model='', content=''):
     """
-    写把内容写入到指定文件方法
+    Writes content to the specified file
 
-    :param file_name:  文件名称
-    :param model:  文件读写模式
-    :param content:  写入文件内容
+    :param file_name:  file name
+    :param model:  file write mode
+    :param content:  the content of the write file
     """
     if not file_name or not content:
         return
@@ -28,11 +28,11 @@ def write_file(file_name='', model='', content=''):
 
 def schedule(block_num, bs, size):
     """
-    下载进度
+    Download progress
 
-    :param block_num: 已经下载的数据块
-    :param bs: 数据块的大小
-    :param size: 远程文件的大小
+    :param block_num: downloaded data block
+    :param bs: size of data block
+    :param size: file size
     """
     per = 100.0 * block_num * bs / size
     if per > 100:
@@ -45,13 +45,10 @@ def schedule(block_num, bs, size):
 
 class Art:
     """
-    author: starry lau
+    author: starry
     """
 
     def __init__(self):
-        """
-        构造方法
-        """
         self.pageIndex = 1
         self.authorName = ''
         self.root_dir = 'D:\ArtStation\\'
@@ -77,9 +74,9 @@ class Art:
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
-        print "当前系统：" + system_str
-        print "当前目录：" + self.current_dir
-        print "下载目录：" + self.root_dir
+        print "Platform system: " + system_str
+        print "Current directory: " + self.current_dir
+        print "Download directory: " + self.root_dir
 
     def read_art(self):
         with open(os.path.join(self.current_dir, 'art.txt'), 'r') as art_file:
@@ -89,21 +86,21 @@ class Art:
 
     def set_author(self, url_author=''):
         """
-        设置作者url
+        set author index url
 
         """
         if not url_author or r'artstation' not in url_author:
-            print '无效网址'
+            print 'Invalid url'
             return
         items = url_author.split("/")
         self.authorName = items[- 1]
-        print "艺术家: %s" % self.authorName
+        print "Artist: %s" % self.authorName
         self.url_author = url_author.replace(r'/artist/', r'/users/')
         self.get_author()
 
     def get_author(self):
         """
-        获取作者作品
+        get author work
 
         """
         target_url = self.url_author + '/projects.json?page=' + str(self.pageIndex)
@@ -113,9 +110,9 @@ class Art:
 
     def get_html(self, url_target=''):
         """
-        获取网页内容
+        get html content
 
-        :param url_target: 网页url
+        :param url_target: url
         """
         html_info = ''
         for i in range(10):
@@ -128,7 +125,7 @@ class Art:
                 # print html_info
                 break
             except Exception as why:
-                print '重试中......%d' % i
+                print 'Connection failure, retrying......%d' % i
                 if i >= 9:
                     write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
@@ -138,19 +135,19 @@ class Art:
 
     def parse_json(self, json_info):
         """
-        解析json
+        parse json
 
-        :param json_info: json内容
+        :param json_info: json content
         """
         target_model = json.loads(json_info)
         # print target_model
         # print target_model.keys()
 
         size = target_model["total_count"] / 50 + 1
-        print '当前页码：%d/%d' % (self.pageIndex, size)
+        print 'Current page: %d/%d' % (self.pageIndex, size)
         data_list = target_model["data"]
         for index, value in enumerate(data_list):
-            print "第%d个作品：%s" % (index + 1 + (self.pageIndex - 1) * 50, str(value["permalink"]))
+            print "The %d work: %s" % (index + 1 + (self.pageIndex - 1) * 50, str(value["permalink"]))
             html_info = self.get_html(value["permalink"])
             if html_info:
                 self.parse_html(html_info)
@@ -161,23 +158,23 @@ class Art:
 
     def parse_html(self, html_info):
         """
-        解析html
+        parse html
 
-        :param html_info: 网页内容
+        :param html_info: html info
         """
         reg_target = 'image_url.*?http(.*?)\\\\'
         pattern_target = re.compile(reg_target, re.S)
         items = re.findall(pattern_target, html_info)
         for item in items:
             image_url = 'http' + item
-            print '图片地址：' + image_url
+            print 'Image url: ' + image_url
             self.download_image_pre(image_url)
 
     def download_image_pre(self, image_url=''):
         """
-        下载图片
+        download image
 
-        :param image_url: 图片下载地址
+        :param image_url: image url
         """
         image_url = image_url.replace('small', 'large')
         image_url = image_url.replace('medium', 'large')
@@ -185,27 +182,27 @@ class Art:
         image_url = image_url.replace('smaller_square', 'large')
         image_url = image_url.replace('micro_square', 'large')
 
-        # 截取图片名称
+        # split image name
         image_item = image_url.split("/")
         image_name = image_item[- 1]
         image_name_item = image_name.split("?")
         image_name = image_name_item[0]
-        print '图片名称：' + image_name
+        print 'Image name: ' + image_name
 
-        # 创建本地文件夹
+        # create local file directory
         dir_path = self.dir_path % self.authorName
         if not os.path.isdir(dir_path):
             os.makedirs(dir_path)
 
-        # 文件下载
+        # file download
         file_local = dir_path + image_name
         if not os.path.exists(file_local):
-            print '下载中:',
+            print 'Downloading: ',
             write_file(dir_path + 'image.txt', 'a+', image_url)
             self.download_image(image_url, file_local)
             time.sleep(self.wait_time)
         else:
-            print '文件已存在，跳过下载\n'
+            print 'File exist, skip download\n'
 
     def download_image(self, image_url='', file_local=''):
         for i in range(10):
@@ -213,7 +210,7 @@ class Art:
                 urllib.urlretrieve(image_url, file_local, reporthook=schedule)
                 break
             except Exception as why:
-                print '重试中......%d' % i
+                print 'Connection failure, retrying......%d' % i
                 if i >= 9:
                     write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
@@ -225,7 +222,7 @@ def main():
     try:
         art.read_art()
     except:
-        print '下载出错'
+        print 'Downloading failure'
         ex_info = traceback.format_exc()
         print ex_info
         write_file(art.root_dir + 'error.log', 'a+', str(ex_info))
