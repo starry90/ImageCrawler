@@ -43,6 +43,11 @@ def schedule(block_num, bs, size):
         print '\n'
 
 
+HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0'}
+CURRENT_DIR = sys.path[0]
+SLEEP_TIME = 1
+
+
 class Art:
     """
     author: starry
@@ -51,35 +56,30 @@ class Art:
     def __init__(self):
         self.pageIndex = 1
         self.authorName = ''
-        self.root_dir = 'D:\ArtStation\\'
-        self.wait_time = 1
+        self.root_dir = ''
         self.dir_path = ''
-        self.current_dir = sys.path[0]
         self.url_author = ''
-        self.userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0'
-        self.headers = {'User-Agent': self.userAgent}
         self.get_dir()
 
     def get_dir(self):
         system_str = platform.system()
-        if system_str == 'Linux':
-            self.root_dir = os.environ['HOME'] + '/ArtStation/'
-        elif system_str == 'Windows':
-            self.root_dir = 'D:\ArtStation\\'
+        if system_str == 'Windows':
+            self.root_dir = 'D:\\%s\\'
         else:
-            self.root_dir = os.path.expanduser(r'~/Desktop/') + 'ArtStation/'
+            self.root_dir = os.path.expanduser(r'~') + '/%s/'
 
+        self.root_dir = self.root_dir % 'ArtStation'
         self.dir_path = self.root_dir + '%s' + os.sep
 
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
         print "Platform system: %s" % system_str
-        print "Current directory: %s" % self.current_dir
+        print "Current directory: %s" % CURRENT_DIR
         print "Download directory: %s\n" % self.root_dir
 
     def read_art(self):
-        with open(os.path.join(self.current_dir, 'art.txt'), 'r') as art_file:
+        with open(os.path.join(CURRENT_DIR, 'art.txt'), 'r') as art_file:
             for line in art_file:
                 self.set_author(line.strip())
 
@@ -118,10 +118,10 @@ class Art:
         for i in range(10):
             try:
                 # print url_target
-                target_request = urllib2.Request(url_target, headers=self.headers)
+                target_request = urllib2.Request(url_target, headers=HEADERS)
                 target_response = urllib2.urlopen(target_request, timeout=10)
                 html_info = target_response.read()
-                time.sleep(self.wait_time)
+                time.sleep(SLEEP_TIME)
                 # print html_info
                 break
             except Exception as why:
@@ -129,7 +129,7 @@ class Art:
                 if i >= 9:
                     write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
-                    time.sleep(self.wait_time)
+                    time.sleep(SLEEP_TIME)
 
         return html_info
 
@@ -200,7 +200,7 @@ class Art:
             print 'Downloading: ',
             write_file(dir_path + 'image.txt', 'a+', image_url)
             self.download_image(image_url, file_local)
-            time.sleep(self.wait_time)
+            time.sleep(SLEEP_TIME)
         else:
             print 'File exist, skip download\n'
 
@@ -214,7 +214,7 @@ class Art:
                 if i >= 9:
                     write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
                 else:
-                    time.sleep(self.wait_time)
+                    time.sleep(SLEEP_TIME)
 
 
 def main():
