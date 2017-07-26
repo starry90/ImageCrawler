@@ -104,7 +104,7 @@ class HuaBan:
         print 'Search key: %s' % search_key
         self.search_key = search_key
         url_format = "https://huaban.com/search/?q=%s&j5jqve8y&page=%d&per_page=20&wfl=1"
-        for index in range(1, 10):
+        for index in range(1, 20):
             print 'current page index: ', index
             url_search = url_format % (search_key, index)
             json_result = self.get_html(url_search)
@@ -124,7 +124,7 @@ class HuaBan:
                 target_response = urllib2.urlopen(target_request, timeout=10)
                 html_info = target_response.read()
                 time.sleep(SLEEP_TIME)
-                print html_info
+                # print html_info
                 break
             except Exception as why:
                 print 'Connection failure, retrying......%d' % i
@@ -140,13 +140,21 @@ class HuaBan:
         image_format = 'http://img.hb.aicdn.com/%s'
         items = json_model['pins']
         for index, value in enumerate(items):
-            image_key = value['file']['key']
+            image_file = value['file']
+            image_key = image_file['key']
+            image_type = str(image_file['type']).replace('image/', '.')
+            # print 'image_file', image_file
+            # print 'image_type', image_type
+            types = ['.png', '.jpeg', '.gif']
+            if image_type not in types:
+                print 'continue'
+                continue
             image_url = image_format % str(image_key)
             self.image_name = image_key
             print "The %d work: %s" % (index + 1 + (page_index - 1) * 20, image_url)
-            self.download_pre(image_url)
+            self.download_pre(image_url, image_type)
 
-    def download_pre(self, image_url):
+    def download_pre(self, image_url, image_suffix):
         # create local file directory
         print self.search_key.encode('gbk')
         dir_path = self.dir_path % self.search_key
@@ -155,7 +163,7 @@ class HuaBan:
             os.makedirs(dir_path)
 
         # file download
-        image_file = dir_path + self.image_name + '.jpeg'
+        image_file = dir_path + self.image_name + image_suffix
         if not os.path.exists(image_file):
             print 'Downloading: ',
             # write_file(dir_path + 'image.txt', 'a+', image_url)
