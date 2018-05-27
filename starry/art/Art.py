@@ -7,7 +7,6 @@ import re
 import sys
 import time
 import traceback
-import urllib
 import urllib2
 
 
@@ -24,23 +23,6 @@ def write_file(file_name='', model='', content=''):
 
     with open(file_name, model) as file_temp:
         (file_temp.writelines(content + "\n\n"))
-
-
-def schedule(block_num, bs, size):
-    """
-    Download progress
-
-    :param block_num: downloaded data block
-    :param bs: size of data block
-    :param size: file size
-    """
-    per = 100.0 * block_num * bs / size
-    if per > 100:
-        per = 100
-
-    print '%0.f%%' % per,
-    if per == 100:
-        print '\n'
 
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0'}
@@ -162,11 +144,11 @@ class Art:
 
         :param html_info: html info
         """
-        reg_target = 'image_url.*?http(.*?)\\\\'
+        reg_target = '"image_url.*?https(.*?)\\\\'
         pattern_target = re.compile(reg_target, re.S)
         items = re.findall(pattern_target, html_info)
         for item in items:
-            image_url = 'http' + item
+            image_url = 'https' + item
             self.download_image_pre(image_url)
 
     def download_image_pre(self, image_url=''):
@@ -204,11 +186,17 @@ class Art:
         else:
             print 'File exist, skip download\n'
 
-    def download_image(self, image_url='', file_local=''):
+    def download_image(self, image_url='', file_path=''):
         for i in range(10):
             try:
-                urllib.urlretrieve(image_url, file_local, reporthook=schedule)
-                break
+                # print image_url
+                target_request = urllib2.Request(image_url, headers=HEADERS)
+                result = urllib2.urlopen(target_request, timeout=10)
+                data = result.read()
+                with open(file_path, "wb") as code:
+                    code.write(data)
+                    print 'success...'
+                    break
             except Exception as why:
                 print 'Connection failure, retrying......%d' % i
                 if i >= 9:
