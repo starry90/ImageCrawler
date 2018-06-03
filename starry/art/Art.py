@@ -29,6 +29,10 @@ HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko
 CURRENT_DIR = sys.path[0]
 SLEEP_TIME = 1
 
+ART_ARTIST = 'https://www.artstation.com/artist/'
+ART = 'https://www.artstation.com/'
+ART_USERS = 'https://www.artstation.com/users/'
+
 
 class Art:
     """
@@ -71,13 +75,14 @@ class Art:
 
         """
         print 'Artist home page: %s' % url_author
-        if not url_author or r'artstation' not in url_author:
-            print 'Invalid home page'
-            return
         items = url_author.split("/")
         self.authorName = items[- 1]
         print "Artist: %s\n" % self.authorName
-        self.url_author = url_author.replace(r'/artist/', r'/users/')
+        if ART_ARTIST in url_author:
+            url_author = url_author.replace(ART_ARTIST, ART_USERS)
+        elif ART in url_author:
+            url_author = url_author.replace(ART, ART_USERS)
+        self.url_author = url_author
         self.get_author()
 
     def get_author(self):
@@ -185,6 +190,7 @@ class Art:
             time.sleep(SLEEP_TIME)
         else:
             print 'File exist, skip download\n'
+        print file_local
 
     def download_image(self, image_url='', file_path=''):
         for i in range(10):
