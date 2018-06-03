@@ -10,7 +10,7 @@ import traceback
 import urllib2
 
 
-def write_file(file_name='', model='', content=''):
+def write_file(file_name='', model='', content='', newline=False):
     """
     Writes content to the specified file
 
@@ -22,7 +22,7 @@ def write_file(file_name='', model='', content=''):
         return
 
     with open(file_name, model) as file_temp:
-        (file_temp.writelines(content + "\n\n"))
+        file_temp.writelines(content + ('\n' if newline else ''))
 
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0'}
@@ -65,9 +65,22 @@ class Art:
         print "Download directory: %s\n" % self.root_dir
 
     def read_art(self):
-        with open(os.path.join(CURRENT_DIR, 'art.txt'), 'r') as art_file:
+        art_file_name = os.path.join(CURRENT_DIR, 'art.txt')
+        with open(art_file_name, 'r') as art_file:
+            lines = []
             for line in art_file:
+                lines.append(line)
+            for index, line in enumerate(lines):
+                if str(line).startswith('finished'):
+                    continue
                 self.set_author(line.strip())
+                self.get_author()
+                # download finished add 'finished' flag
+                lines[index] = 'finished ' + line
+                update_str = ''
+                for value in lines:
+                    update_str += value.strip() + ('\n' if value != lines[-1] else '')
+                write_file(art_file_name, 'w', update_str)
 
     def set_author(self, url_author=''):
         """
@@ -83,7 +96,6 @@ class Art:
         elif ART in url_author:
             url_author = url_author.replace(ART, ART_USERS)
         self.url_author = url_author
-        self.get_author()
 
     def get_author(self):
         """
@@ -114,7 +126,7 @@ class Art:
             except Exception as why:
                 print 'Connection failure, retrying......%d' % i
                 if i >= 9:
-                    write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
+                    write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc(), True)
                 else:
                     time.sleep(SLEEP_TIME)
 
@@ -185,7 +197,7 @@ class Art:
         file_local = dir_path + image_name
         if not os.path.exists(file_local):
             print 'Downloading: ',
-            write_file(dir_path + 'image.txt', 'a+', image_url)
+            write_file(dir_path + 'image.txt', 'a+', image_url, True)
             self.download_image(image_url, file_local)
             time.sleep(SLEEP_TIME)
         else:
@@ -206,7 +218,7 @@ class Art:
             except Exception as why:
                 print 'Connection failure, retrying......%d' % i
                 if i >= 9:
-                    write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc())
+                    write_file(self.root_dir + 'error.log', 'a+', traceback.format_exc(), True)
                 else:
                     time.sleep(SLEEP_TIME)
 
@@ -219,7 +231,7 @@ def main():
         print 'Downloading failure'
         ex_info = traceback.format_exc()
         print ex_info
-        write_file(art.root_dir + 'error.log', 'a+', str(ex_info))
+        write_file(art.root_dir + 'error.log', 'a+', str(ex_info), True)
 
     finally:
         raw_input('press [Enter]')
