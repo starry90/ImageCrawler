@@ -1,0 +1,3 @@
+https://github.com/starry90/DoubanForAndroid.git
+project-clone
+master
